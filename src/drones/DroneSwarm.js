@@ -24,6 +24,14 @@ export class DroneSwarm extends THREE.Group {
     return drone;
   }
 
+  clearDrones() {
+    this.drones.forEach((drone) => {
+      this.remove(drone.pathLine);
+      this.remove(drone);
+    });
+    this.drones = [];
+  }
+
   update(dt, worldMap) {
     this.drones.forEach((drone) => drone.update(dt, worldMap, this));
     this.resolveDroneSeparation(worldMap);

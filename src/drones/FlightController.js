@@ -79,6 +79,7 @@ export class FlightController {
       adjustedTarget,
       distanceToAdjustedTarget,
       swarm,
+      worldMap,
     );
     const velocityDelta = desiredVelocity.sub(this.drone.velocity);
     const maxVelocityDelta = this.acceleration * dt;
@@ -86,7 +87,10 @@ export class FlightController {
     limitVectorLength(velocityDelta, maxVelocityDelta);
     this.drone.acceleration.copy(velocityDelta).divideScalar(Math.max(dt, 0.0001));
     this.drone.velocity.add(velocityDelta);
-    limitVectorLength(this.drone.velocity, this.maxSpeed + this.windStrength);
+    limitVectorLength(
+      this.drone.velocity,
+      this.maxSpeed + (worldMap.windField?.speed ?? 0) + this.windStrength,
+    );
 
     this.drone.position.addScaledVector(this.drone.velocity, dt);
     this.preventTerrainClipping(worldMap);
@@ -94,7 +98,7 @@ export class FlightController {
     this.trackDistance(previousPosition);
   }
 
-  computeDesiredVelocity(adjustedTarget, distanceToAdjustedTarget, swarm) {
+  computeDesiredVelocity(adjustedTarget, distanceToAdjustedTarget, swarm, worldMap) {
     const desiredVelocity = adjustedTarget.clone().sub(this.drone.position);
 
     if (distanceToAdjustedTarget > 0.001) {
@@ -104,8 +108,38 @@ export class FlightController {
     const speedScale = clamp(distanceToAdjustedTarget / this.slowRadius, 0.12, 1);
     desiredVelocity.multiplyScalar(this.maxSpeed * speedScale);
     desiredVelocity.add(this.computeSwarmAvoidance(swarm));
+    desiredVelocity.add(this.computeWindInfluence(worldMap));
     desiredVelocity.add(this.windVelocity);
     return desiredVelocity;
+  }
+
+  computeWindInfluence(worldMap) {
+    if (!worldMap?.windField) {
+      return new THREE.Vector3();
+    }
+
+    const fieldWind = worldMap.windField.getVelocityAt(this.drone.position);
+    const windMagnitude = fieldWind.length();
+
+    if (windMagnitude <= 0.001) {
+      return fieldWind;
+    }
+
+    const currentDirection = this.drone.velocity.clone();
+
+    if (currentDirection.length() <= 0.001 && this.target) {
+      currentDirection.copy(this.target).sub(this.drone.position);
+    }
+
+    const flightDirection =
+      currentDirection.length() > 0.001
+        ? currentDirection.normalize()
+        : new THREE.Vector3(1, 0, 0);
+    const windDirection = fieldWind.clone().normalize();
+    const alignment = windDirection.dot(flightDirection);
+    const pushOrDrag = 0.52 + alignment * 0.28;
+
+    return fieldWind.multiplyScalar(clamp(pushOrDrag, 0.24, 0.82));
   }
 
   computeSwarmAvoidance(swarm) {

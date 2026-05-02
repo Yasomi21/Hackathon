@@ -90,6 +90,10 @@ export class Simulation {
   tick() {
     const dt = Math.min(this.clock.getDelta(), 1 / 24);
 
+    if (this.worldMap?.update) {
+      this.worldMap.update(dt);
+    }
+
     if (this.swarm && this.worldMap) {
       this.swarm.update(dt, this.worldMap);
     }

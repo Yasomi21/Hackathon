@@ -151,6 +151,12 @@ body::after {
   margin-bottom: 12px;
 }
 
+.header-actions {
+  display: grid;
+  gap: 6px;
+  justify-items: end;
+}
+
 .eyebrow {
   margin: 0 0 4px;
   color: var(--hud-accent);
@@ -194,6 +200,28 @@ h1 {
   border-color: color-mix(in srgb, var(--hud-accent) 76%, transparent);
   background: rgba(50, 210, 100, 0.18);
   color: var(--hud-accent);
+}
+
+.reset-button {
+  min-width: 74px;
+  min-height: 28px;
+  border: 1px solid color-mix(in srgb, var(--hud-accent) 50%, transparent);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.035);
+  color: var(--hud-value);
+  cursor: pointer;
+  font-family:
+    "SFMono-Regular", Consolas, "Liberation Mono", ui-monospace, monospace;
+  font-size: 0.72rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.reset-button:hover,
+.reset-button:focus-visible {
+  border-color: var(--hud-accent);
+  outline: none;
+  box-shadow: 0 0 14px color-mix(in srgb, var(--hud-accent) 16%, transparent);
 }
 
 .display-mode,

@@ -23,7 +23,10 @@
           <p id="selectedDroneCode" class="eyebrow">COMMAND / DRONE A</p>
           <h1 id="selectedDroneName">Drone A</h1>
         </div>
-        <span id="statusBadge" class="status-badge">Flying</span>
+        <div class="header-actions">
+          <span id="statusBadge" class="status-badge">Flying</span>
+          <button id="resetScenarioButton" class="reset-button" type="button">Reset</button>
+        </div>
       </header>
 
       <div class="drone-selector" role="group" aria-label="Select drone telemetry">
@@ -74,6 +77,14 @@
         <div class="metric">
           <span>Nearest</span>
           <strong id="nearestValue">none</strong>
+        </div>
+        <div class="metric">
+          <span>Thermal</span>
+          <strong id="thermalValue">people 0 | animals 0</strong>
+        </div>
+        <div class="metric">
+          <span>Wind</span>
+          <strong id="windValue">0.0 m/s @ 0 deg</strong>
         </div>
         <div class="metric">
           <span>Reached</span>

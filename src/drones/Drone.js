@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { FlightController } from "./FlightController.js";
 import { GPS } from "../sensors/GPS.js";
 import { IMU } from "../sensors/IMU.js";
+import { ThermalSensor } from "../sensors/ThermalSensor.js";
 import { enuVector } from "../utils/ENU.js";
 
 export class Drone extends THREE.Group {
@@ -12,6 +13,7 @@ export class Drone extends THREE.Group {
     radius = 5,
     color = 0x58d7ff,
     flightControllerOptions = {},
+    thermalSensorOptions = {},
   } = {}) {
     super();
     this.droneId = id;
@@ -32,6 +34,8 @@ export class Drone extends THREE.Group {
 
     this.gps = new GPS(this);
     this.imu = new IMU(this);
+    this.thermalSensor = new ThermalSensor(this, thermalSensorOptions);
+    this.thermalReading = this.thermalSensor.read();
     this.flightController = new FlightController(this, flightControllerOptions);
 
     this.pathPoints = [this.position.clone()];
@@ -162,6 +166,7 @@ export class Drone extends THREE.Group {
 
   update(dt, worldMap, swarm = null) {
     this.flightController.update(dt, worldMap, swarm);
+    this.thermalReading = this.thermalSensor.read(worldMap);
 
     if (this.sensorHalo) {
       this.sensorHalo.rotation.z += dt * 1.8;

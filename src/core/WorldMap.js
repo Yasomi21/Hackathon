@@ -1,10 +1,21 @@
 import { Terrain } from "./Terrain.js";
+import { WindField } from "./WindField.js";
 
 export class WorldMap extends Terrain {
   constructor(options = {}) {
     super(options);
     this.name = "World Map";
     this.obstacles = [];
+    this.heatEntities = [];
+    this.windField = WindField.random();
+  }
+
+  update(dt) {
+    this.windField.update(dt);
+  }
+
+  setWindField(windField) {
+    this.windField = windField;
   }
 
   addObstacle(obstacle) {
@@ -21,6 +32,23 @@ export class WorldMap extends Terrain {
 
   addObstacles(obstacles) {
     obstacles.forEach((obstacle) => this.addObstacle(obstacle));
+  }
+
+  clearObstacles() {
+    this.obstacles.forEach((obstacle) => this.remove(obstacle));
+    this.obstacles = [];
+    this.refreshTerrainGeometry((x, y) => this.getTerrainHeightAt(x, y));
+  }
+
+  addHeatEntity(entity) {
+    this.heatEntities.push(entity);
+    entity.addToScene(this, this);
+    return entity;
+  }
+
+  clearHeatEntities() {
+    this.heatEntities.forEach((entity) => this.remove(entity));
+    this.heatEntities = [];
   }
 
   getTerrainHeightAt(x, y, { ignoreObstacle = null } = {}) {
@@ -62,5 +90,9 @@ export class WorldMap extends Terrain {
 
   getObstacles() {
     return [...this.obstacles];
+  }
+
+  getHeatEntities() {
+    return [...this.heatEntities];
   }
 }
