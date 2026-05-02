@@ -33,7 +33,7 @@ worldMap.addObstacle(
     position: { x: 80, y: 70 },
     radius: 95,
     height: 24,
-    color: 0x829c60,
+    color: 0x31523a,
   }),
 );
 worldMap.addObstacle(
@@ -42,7 +42,7 @@ worldMap.addObstacle(
     position: { x: 165, y: 138 },
     radius: 86,
     height: 66,
-    color: 0x8d8165,
+    color: 0x5c604f,
   }),
 );
 worldMap.addObstacle(
@@ -51,7 +51,7 @@ worldMap.addObstacle(
     position: { x: -140, y: 160 },
     radius: 105,
     height: 20,
-    color: 0x7f9f71,
+    color: 0x2d5c39,
   }),
 );
 
@@ -62,7 +62,7 @@ worldMap.addObstacle(
     width: 28,
     depth: 28,
     height: 58,
-    color: 0xd2c6a6,
+    color: 0x60706b,
   }),
 );
 worldMap.addObstacle(
@@ -72,7 +72,7 @@ worldMap.addObstacle(
     width: 46,
     depth: 32,
     height: 24,
-    color: 0xb7c0b0,
+    color: 0x4d6258,
   }),
 );
 
@@ -95,7 +95,7 @@ worldMap.addObstacle(
 });
 
 simulation.setWorldMap(worldMap);
-simulation.scene.add(createPointMarker(startPoint, worldMap, 0x8bd3ff));
+simulation.scene.add(createPointMarker(startPoint, worldMap, 0x58ff9a));
 simulation.scene.add(createPointMarker(endPoint, worldMap, 0xffc45c));
 
 const flightParameters = {
@@ -120,9 +120,10 @@ const safeStartPoint = {
 
 const drone = new Drone({
   id: "Drone-01",
+  name: "Drone A",
   position: safeStartPoint,
   radius: 5.8,
-  color: 0x54d8ff,
+  color: 0x52ffb1,
   flightControllerOptions: flightParameters,
 });
 drone.setTarget(endPoint);
@@ -141,7 +142,9 @@ const hud = {
   distance: document.querySelector("#distanceValue"),
   reached: document.querySelector("#reachedValue"),
 };
+const modeButtons = document.querySelectorAll("[data-display-mode]");
 
+setupDisplayModeControls(simulation, modeButtons);
 simulation.setUpdateHook(() => updateHud(drone, hud));
 simulation.start();
 
@@ -161,10 +164,16 @@ function createPointMarker(point, worldMap, color) {
   group.position.set(point.x, point.y, groundZ);
 
   const ring = new THREE.Mesh(
-    new THREE.TorusGeometry(10, 0.7, 10, 32),
-    new THREE.MeshBasicMaterial({ color }),
+    new THREE.TorusGeometry(12, 0.35, 8, 72),
+    new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.88 }),
   );
   ring.position.z = 0.35;
+
+  const outerRing = new THREE.Mesh(
+    new THREE.TorusGeometry(18, 0.18, 8, 96),
+    new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.38 }),
+  );
+  outerRing.position.z = 0.5;
 
   const poleGeometry = new THREE.BufferGeometry().setFromPoints([
     new THREE.Vector3(0, 0, 0.5),
@@ -172,16 +181,16 @@ function createPointMarker(point, worldMap, color) {
   ]);
   const pole = new THREE.Line(
     poleGeometry,
-    new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.8 }),
+    new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.72 }),
   );
 
   const orb = new THREE.Mesh(
     new THREE.SphereGeometry(3.2, 16, 10),
-    new THREE.MeshBasicMaterial({ color }),
+    new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.95 }),
   );
   orb.position.z = markerTopZ - groundZ;
 
-  group.add(ring, pole, orb);
+  group.add(ring, outerRing, pole, orb);
   return group;
 }
 
@@ -206,4 +215,43 @@ function updateHud(droneToDisplay, hudElements) {
   hudElements.reached.textContent = reached ? "Yes" : "No";
   hudElements.statusBadge.textContent = reached ? "Reached" : "Flying";
   hudElements.statusBadge.classList.toggle("reached", reached);
+}
+
+function setupDisplayModeControls(simulationInstance, buttons) {
+  const setMode = (mode) => {
+    simulationInstance.setDisplayMode(mode);
+    updateSceneDisplayTheme(mode);
+    document.body.dataset.displayMode = mode;
+
+    buttons.forEach((button) => {
+      const isActive = button.dataset.displayMode === mode;
+      button.classList.toggle("active", isActive);
+      button.setAttribute("aria-pressed", String(isActive));
+    });
+  };
+
+  buttons.forEach((button) => {
+    button.addEventListener("click", () => setMode(button.dataset.displayMode));
+  });
+
+  setMode("tactical");
+}
+
+function updateSceneDisplayTheme(mode) {
+  worldMap.setDisplayMode(mode);
+  worldMap.getObstacles().forEach((obstacle) => {
+    obstacle.traverse((object) => {
+      if (object.isLine || object.isLineSegments) {
+        object.material.color.setHex(mode === "infrared" ? 0xffc65a : 0xb3ff68);
+        object.material.opacity = mode === "tactical" ? 0.44 : 0.92;
+      }
+
+      if (object.isMesh && object.material?.emissive) {
+        const emissiveColor = mode === "infrared" ? 0x331005 : 0x102c10;
+        object.material.emissive.setHex(mode === "tactical" ? 0x08120e : emissiveColor);
+        object.material.emissiveIntensity = mode === "tactical" ? 0.22 : 0.52;
+      }
+    });
+  });
+  swarm.drones.forEach((swarmDrone) => swarmDrone.setDisplayMode(mode));
 }

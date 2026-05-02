@@ -20,11 +20,23 @@
     <section id="hud" class="hud" aria-live="polite">
       <header class="hud-header">
         <div>
-          <p class="eyebrow">ENU Drone 01</p>
-          <h1>Point A to Point B</h1>
+          <p class="eyebrow">COMMAND / DRONE-01</p>
+          <h1>Operation Vector</h1>
         </div>
         <span id="statusBadge" class="status-badge">Flying</span>
       </header>
+
+      <div class="display-mode" role="group" aria-label="Display shader mode">
+        <button class="mode-button active" type="button" data-display-mode="tactical">
+          TAC
+        </button>
+        <button class="mode-button" type="button" data-display-mode="nightVision">
+          NVG
+        </button>
+        <button class="mode-button" type="button" data-display-mode="infrared">
+          IR
+        </button>
+      </div>
 
       <div class="hud-grid">
         <div class="metric">

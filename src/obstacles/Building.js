@@ -24,8 +24,10 @@ export class Building extends Obstacle {
       new THREE.BoxGeometry(this.width, this.depth, this.height),
       new THREE.MeshStandardMaterial({
         color: this.color,
-        roughness: 0.72,
-        metalness: 0.04,
+        emissive: 0x08120e,
+        emissiveIntensity: 0.22,
+        roughness: 0.48,
+        metalness: 0.42,
       }),
     );
     body.position.z = this.height / 2;
@@ -35,14 +37,26 @@ export class Building extends Obstacle {
     const edges = new THREE.LineSegments(
       new THREE.EdgesGeometry(body.geometry),
       new THREE.LineBasicMaterial({
-        color: 0x3f4238,
+        color: 0x86ffc0,
         transparent: true,
-        opacity: 0.46,
+        opacity: 0.44,
       }),
     );
     edges.position.copy(body.position);
 
-    group.add(body, edges);
+    const antenna = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(0, 0, this.height),
+        new THREE.Vector3(0, 0, this.height + 16),
+      ]),
+      new THREE.LineBasicMaterial({
+        color: 0xffc45c,
+        transparent: true,
+        opacity: 0.74,
+      }),
+    );
+
+    group.add(body, edges, antenna);
     return group;
   }
 

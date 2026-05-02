@@ -16,7 +16,9 @@ export class Terrain extends THREE.Group {
     this.heightFunction = heightFunction ?? this.defaultHeightFunction.bind(this);
 
     this.mesh = this.createTerrainMesh();
-    this.add(this.mesh);
+    this.wireframe = this.createWireframeOverlay(this.mesh.geometry);
+    this.add(this.mesh, this.wireframe);
+    this.setDisplayMode("tactical");
   }
 
   getHeightAt(x, y) {
@@ -47,8 +49,8 @@ export class Terrain extends THREE.Group {
 
     const material = new THREE.MeshStandardMaterial({
       vertexColors: true,
-      roughness: 0.92,
-      metalness: 0.02,
+      roughness: 0.86,
+      metalness: 0.18,
       side: THREE.DoubleSide,
     });
 
@@ -60,6 +62,44 @@ export class Terrain extends THREE.Group {
 
   refreshTerrainGeometry(heightResolver = (x, y) => this.getHeightAt(x, y)) {
     this.applyHeightToGeometry(this.mesh.geometry, heightResolver);
+    this.refreshWireframeOverlay();
+  }
+
+  createWireframeOverlay(geometry) {
+    const wireframe = new THREE.LineSegments(
+      new THREE.WireframeGeometry(geometry),
+      new THREE.LineBasicMaterial({
+        color: 0x4cff8a,
+        transparent: true,
+        opacity: 0.12,
+      }),
+    );
+    wireframe.name = "Terrain Tactical Wireframe";
+    wireframe.position.z = 0.12;
+    return wireframe;
+  }
+
+  refreshWireframeOverlay() {
+    if (!this.wireframe) {
+      return;
+    }
+
+    this.wireframe.geometry.dispose();
+    this.wireframe.geometry = new THREE.WireframeGeometry(this.mesh.geometry);
+  }
+
+  setDisplayMode(mode) {
+    const modes = {
+      tactical: { wireColor: 0x4cff8a, wireOpacity: 0.12, emissive: 0x000000 },
+      nightVision: { wireColor: 0xb3ff68, wireOpacity: 0.42, emissive: 0x071b07 },
+      infrared: { wireColor: 0xffc65a, wireOpacity: 0.36, emissive: 0x190805 },
+    };
+    const theme = modes[mode] ?? modes.tactical;
+
+    this.wireframe.material.color.setHex(theme.wireColor);
+    this.wireframe.material.opacity = theme.wireOpacity;
+    this.mesh.material.emissive.setHex(theme.emissive);
+    this.mesh.material.emissiveIntensity = mode === "tactical" ? 0 : 0.28;
   }
 
   applyHeightToGeometry(geometry, heightResolver) {
@@ -82,10 +122,10 @@ export class Terrain extends THREE.Group {
 
   applyVertexColors(geometry, heights) {
     const colors = [];
-    const low = new THREE.Color(0x42644a);
-    const mid = new THREE.Color(0x86a75b);
-    const high = new THREE.Color(0xc1b28d);
-    const snow = new THREE.Color(0xe6e0ce);
+    const low = new THREE.Color(0x102018);
+    const mid = new THREE.Color(0x25472e);
+    const high = new THREE.Color(0x546b48);
+    const snow = new THREE.Color(0xb8c7a1);
 
     heights.forEach((height) => {
       const t = clamp((height + 8) / 92, 0, 1);

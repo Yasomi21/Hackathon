@@ -14,20 +14,37 @@ export class Mountain extends Obstacle {
   }
 
   createMesh() {
+    const group = new THREE.Group();
     const cone = new THREE.Mesh(
       new THREE.ConeGeometry(this.radius, this.height, 36, 1),
       new THREE.MeshStandardMaterial({
         color: this.color,
-        roughness: 0.98,
+        emissive: 0x101811,
+        emissiveIntensity: 0.18,
+        roughness: 0.82,
+        metalness: 0.12,
         transparent: true,
-        opacity: 0.26,
+        opacity: 0.24,
       }),
     );
     cone.rotation.x = Math.PI / 2;
     cone.position.z = this.height / 2;
     cone.castShadow = true;
     cone.receiveShadow = true;
-    return cone;
+
+    const wire = new THREE.LineSegments(
+      new THREE.WireframeGeometry(cone.geometry),
+      new THREE.LineBasicMaterial({
+        color: 0xb3ff68,
+        transparent: true,
+        opacity: 0.2,
+      }),
+    );
+    wire.rotation.copy(cone.rotation);
+    wire.position.copy(cone.position);
+
+    group.add(cone, wire);
+    return group;
   }
 
   getTerrainHeightContributionAt(x, y) {
