@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ENU Drone Swarm Simulation</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.164.1/build/three.module.js",
+          "three/addons/": "https://unpkg.com/three@0.164.1/examples/jsm/"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <main id="app" aria-label="3D ENU drone swarm simulation"></main>
+
+    <section id="hud" class="hud" aria-live="polite">
+      <header class="hud-header">
+        <div>
+          <p class="eyebrow">ENU Drone 01</p>
+          <h1>Point A to Point B</h1>
+        </div>
+        <span id="statusBadge" class="status-badge">Flying</span>
+      </header>
+
+      <div class="hud-grid">
+        <div class="metric">
+          <span>Position</span>
+          <strong id="positionValue">x 0.0 | y 0.0 | z 0.0</strong>
+        </div>
+        <div class="metric">
+          <span>Velocity</span>
+          <strong id="velocityValue">x 0.0 | y 0.0 | z 0.0</strong>
+        </div>
+        <div class="metric">
+          <span>Target</span>
+          <strong id="targetValue">x 0.0 | y 0.0 | z 0.0</strong>
+        </div>
+        <div class="metric">
+          <span>GPS</span>
+          <strong id="gpsValue">x 0.0 | y 0.0 | z 0.0</strong>
+        </div>
+        <div class="metric tall">
+          <span>IMU</span>
+          <strong id="imuValue">accelerometer x 0.0 | y 0.0 | z 0.0</strong>
+        </div>
+        <div class="metric">
+          <span>Distance</span>
+          <strong id="distanceValue">0.0 m</strong>
+        </div>
+        <div class="metric">
+          <span>Reached</span>
+          <strong id="reachedValue">No</strong>
+        </div>
+      </div>
+    </section>
+
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>
