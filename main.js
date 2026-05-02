@@ -99,14 +99,19 @@ simulation.scene.add(createPointMarker(startPoint, worldMap, 0x58ff9a));
 simulation.scene.add(createPointMarker(endPoint, worldMap, 0xffc45c));
 
 const flightParameters = {
-  maxSpeed: 38,
-  acceleration: 22,
+  maxSpeed: 36,
+  acceleration: 24,
   cruiseAltitude: 46,
   minTerrainClearance: 10,
   windStrength: 3.2,
-  arrivalThreshold: 5,
-  slowRadius: 82,
+  arrivalThreshold: 24,
+  slowRadius: 95,
   lookAheadDistance: 95,
+  separationRadius: 64,
+  collisionRadius: 16,
+  avoidanceStrength: 38,
+  emergencyAvoidanceStrength: 92,
+  holdPositionThreshold: 7,
 };
 
 const safeStartPoint = {
@@ -118,21 +123,50 @@ const safeStartPoint = {
   ),
 };
 
-const drone = new Drone({
-  id: "Drone-01",
-  name: "Drone A",
-  position: safeStartPoint,
-  radius: 5.8,
-  color: 0x52ffb1,
-  flightControllerOptions: flightParameters,
-});
-drone.setTarget(endPoint);
+const droneLaunchOffsets = [
+  { name: "Drone A", offset: { x: -42, y: -28, z: 0 }, color: 0x52ffb1 },
+  { name: "Drone B", offset: { x: -20, y: 18, z: 5 }, color: 0x79ffd7 },
+  { name: "Drone C", offset: { x: 8, y: -18, z: 10 }, color: 0xa6ff75 },
+  { name: "Drone D", offset: { x: 34, y: 22, z: 15 }, color: 0xffd56a },
+  { name: "Drone E", offset: { x: 58, y: -24, z: 20 }, color: 0xff8f62 },
+];
 
-const swarm = new DroneSwarm();
-swarm.addDrone(drone);
+const swarm = new DroneSwarm({
+  collisionPadding: 4.5,
+  arrivalFormationRadius: 20,
+  arrivalFormationEngageRadius: 115,
+});
+const drones = droneLaunchOffsets.map((config, index) => {
+  const launchPoint = {
+    x: startPoint.x + config.offset.x,
+    y: startPoint.y + config.offset.y,
+    z: safeStartPoint.z + config.offset.z,
+  };
+
+  launchPoint.z = Math.max(
+    launchPoint.z,
+    worldMap.getHeightAt(launchPoint.x, launchPoint.y) +
+      flightParameters.minTerrainClearance,
+  );
+
+  const swarmDrone = new Drone({
+    id: `Drone-${String(index + 1).padStart(2, "0")}`,
+    name: config.name,
+    position: launchPoint,
+    radius: 4.8,
+    color: config.color,
+    flightControllerOptions: flightParameters,
+  });
+  swarmDrone.setTarget(endPoint);
+  swarm.addDrone(swarmDrone);
+  return swarmDrone;
+});
 simulation.setDroneSwarm(swarm);
+let selectedDrone = drones[0];
 
 const hud = {
+  selectedDroneCode: document.querySelector("#selectedDroneCode"),
+  selectedDroneName: document.querySelector("#selectedDroneName"),
   statusBadge: document.querySelector("#statusBadge"),
   position: document.querySelector("#positionValue"),
   velocity: document.querySelector("#velocityValue"),
@@ -140,19 +174,23 @@ const hud = {
   gps: document.querySelector("#gpsValue"),
   imu: document.querySelector("#imuValue"),
   distance: document.querySelector("#distanceValue"),
+  nearest: document.querySelector("#nearestValue"),
   reached: document.querySelector("#reachedValue"),
 };
 const modeButtons = document.querySelectorAll("[data-display-mode]");
+const droneButtons = document.querySelectorAll("[data-drone-index]");
 
 setupDisplayModeControls(simulation, modeButtons);
-simulation.setUpdateHook(() => updateHud(drone, hud));
+setupDroneSelector(droneButtons);
+simulation.setUpdateHook(() => updateHud(selectedDrone, hud, swarm));
 simulation.start();
 
 window.droneSwarmDemo = {
   simulation,
   worldMap,
   swarm,
-  drone,
+  drone: drones[0],
+  drones,
   startPoint,
   endPoint,
 };
@@ -194,12 +232,15 @@ function createPointMarker(point, worldMap, color) {
   return group;
 }
 
-function updateHud(droneToDisplay, hudElements) {
+function updateHud(droneToDisplay, hudElements, swarmToDisplay) {
   const gpsReading = droneToDisplay.gps.read();
   const imuReading = droneToDisplay.imu.read();
   const target = droneToDisplay.flightController.target;
   const reached = droneToDisplay.flightController.reachedTarget;
+  const nearestDroneDistance = swarmToDisplay.getClosestDroneDistance(droneToDisplay);
 
+  hudElements.selectedDroneCode.textContent = `COMMAND / ${droneToDisplay.name.toUpperCase()}`;
+  hudElements.selectedDroneName.textContent = droneToDisplay.name;
   hudElements.position.textContent = formatENU(droneToDisplay.position);
   hudElements.velocity.textContent = formatENU(droneToDisplay.velocity);
   hudElements.target.textContent = target ? formatENU(target) : "none";
@@ -212,9 +253,30 @@ function updateHud(droneToDisplay, hudElements) {
   hudElements.distance.textContent = `${droneToDisplay.distanceTraveled.toFixed(
     1,
   )} m`;
+  hudElements.nearest.textContent = Number.isFinite(nearestDroneDistance)
+    ? `${nearestDroneDistance.toFixed(1)} m`
+    : "none";
   hudElements.reached.textContent = reached ? "Yes" : "No";
   hudElements.statusBadge.textContent = reached ? "Reached" : "Flying";
   hudElements.statusBadge.classList.toggle("reached", reached);
+}
+
+function setupDroneSelector(buttons) {
+  const selectDrone = (index) => {
+    selectedDrone = drones[index] ?? drones[0];
+
+    buttons.forEach((button) => {
+      const isActive = Number(button.dataset.droneIndex) === index;
+      button.classList.toggle("active", isActive);
+      button.setAttribute("aria-pressed", String(isActive));
+    });
+  };
+
+  buttons.forEach((button) => {
+    button.addEventListener("click", () => selectDrone(Number(button.dataset.droneIndex)));
+  });
+
+  selectDrone(0);
 }
 
 function setupDisplayModeControls(simulationInstance, buttons) {

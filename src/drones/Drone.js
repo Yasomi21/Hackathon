@@ -18,6 +18,7 @@ export class Drone extends THREE.Group {
     this.displayName = name;
     this.name = name;
     this.radius = radius;
+    this.baseColor = color;
     this.velocity = new THREE.Vector3();
     this.acceleration = new THREE.Vector3();
     this.angularVelocity = new THREE.Vector3();
@@ -159,8 +160,8 @@ export class Drone extends THREE.Group {
     this.flightController.setTarget(target);
   }
 
-  update(dt, worldMap) {
-    this.flightController.update(dt, worldMap);
+  update(dt, worldMap, swarm = null) {
+    this.flightController.update(dt, worldMap, swarm);
 
     if (this.sensorHalo) {
       this.sensorHalo.rotation.z += dt * 1.8;
@@ -191,7 +192,7 @@ export class Drone extends THREE.Group {
   setDisplayMode(mode) {
     const modes = {
       tactical: {
-        color: 0x52ffb1,
+        color: this.baseColor,
         shell: 0xd6fff0,
         haloOpacity: 0.5,
         shellOpacity: 0.38,

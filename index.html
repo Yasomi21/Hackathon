@@ -20,11 +20,19 @@
     <section id="hud" class="hud" aria-live="polite">
       <header class="hud-header">
         <div>
-          <p class="eyebrow">COMMAND / DRONE-01</p>
-          <h1>Operation Vector</h1>
+          <p id="selectedDroneCode" class="eyebrow">COMMAND / DRONE A</p>
+          <h1 id="selectedDroneName">Drone A</h1>
         </div>
         <span id="statusBadge" class="status-badge">Flying</span>
       </header>
+
+      <div class="drone-selector" role="group" aria-label="Select drone telemetry">
+        <button class="drone-button active" type="button" data-drone-index="0">A</button>
+        <button class="drone-button" type="button" data-drone-index="1">B</button>
+        <button class="drone-button" type="button" data-drone-index="2">C</button>
+        <button class="drone-button" type="button" data-drone-index="3">D</button>
+        <button class="drone-button" type="button" data-drone-index="4">E</button>
+      </div>
 
       <div class="display-mode" role="group" aria-label="Display shader mode">
         <button class="mode-button active" type="button" data-display-mode="tactical">
@@ -62,6 +70,10 @@
         <div class="metric">
           <span>Distance</span>
           <strong id="distanceValue">0.0 m</strong>
+        </div>
+        <div class="metric">
+          <span>Nearest</span>
+          <strong id="nearestValue">none</strong>
         </div>
         <div class="metric">
           <span>Reached</span>

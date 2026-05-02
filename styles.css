@@ -196,9 +196,9 @@ h1 {
   color: var(--hud-accent);
 }
 
-.display-mode {
+.display-mode,
+.drone-selector {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px;
   margin: 0 0 12px;
   padding: 5px;
@@ -207,7 +207,16 @@ h1 {
   background: rgba(0, 0, 0, 0.26);
 }
 
-.mode-button {
+.display-mode {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.drone-selector {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.mode-button,
+.drone-button {
   min-height: 32px;
   border: 1px solid transparent;
   border-radius: 3px;
@@ -222,12 +231,15 @@ h1 {
 }
 
 .mode-button:hover,
-.mode-button:focus-visible {
+.mode-button:focus-visible,
+.drone-button:hover,
+.drone-button:focus-visible {
   border-color: color-mix(in srgb, var(--hud-accent) 52%, transparent);
   outline: none;
 }
 
-.mode-button.active {
+.mode-button.active,
+.drone-button.active {
   border-color: var(--hud-accent);
   background: color-mix(in srgb, var(--hud-accent) 17%, rgba(0, 0, 0, 0.38));
   color: var(--hud-value);
