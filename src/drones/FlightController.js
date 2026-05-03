@@ -28,6 +28,8 @@ export class FlightController {
     this.avoidanceStrength = options.avoidanceStrength ?? 34;
     this.emergencyAvoidanceStrength = options.emergencyAvoidanceStrength ?? 70;
     this.holdPositionThreshold = options.holdPositionThreshold ?? 4.5;
+    this.arrivalFormationRadius = options.arrivalFormationRadius ?? 20;
+    this.arrivalFormationEngageRadius = options.arrivalFormationEngageRadius ?? 115;
 
     this.windVelocity = new THREE.Vector3();
     this.windTarget = new THREE.Vector3();
@@ -39,9 +41,9 @@ export class FlightController {
     this.reachedTarget = false;
   }
 
-  update(dt, worldMap, swarm = null) {
+  update(dt, worldMap) {
     if (this.reachedTarget) {
-      this.releaseHoldIfDisplaced(swarm, worldMap);
+      this.releaseHoldIfDisplaced(worldMap);
     }
 
     if (!this.target || this.reachedTarget) {
@@ -54,8 +56,10 @@ export class FlightController {
 
     const previousPosition = this.drone.position.clone();
     const finalTarget = this.getSafeFinalTarget(worldMap);
-    const arrivalTarget =
-      swarm?.getArrivalPositionForDrone(this.drone, finalTarget) ?? finalTarget;
+    const arrivalTarget = this.drone.radio.getLocalArrivalSlot(finalTarget, {
+      formationRadius: this.arrivalFormationRadius,
+      engageRadius: this.arrivalFormationEngageRadius,
+    });
     arrivalTarget.z = Math.max(
       arrivalTarget.z,
       worldMap.getHeightAt(arrivalTarget.x, arrivalTarget.y) +
@@ -78,7 +82,6 @@ export class FlightController {
     const desiredVelocity = this.computeDesiredVelocity(
       adjustedTarget,
       distanceToAdjustedTarget,
-      swarm,
       worldMap,
     );
     const velocityDelta = desiredVelocity.sub(this.drone.velocity);
@@ -98,7 +101,7 @@ export class FlightController {
     this.trackDistance(previousPosition);
   }
 
-  computeDesiredVelocity(adjustedTarget, distanceToAdjustedTarget, swarm, worldMap) {
+  computeDesiredVelocity(adjustedTarget, distanceToAdjustedTarget, worldMap) {
     const desiredVelocity = adjustedTarget.clone().sub(this.drone.position);
 
     if (distanceToAdjustedTarget > 0.001) {
@@ -107,7 +110,7 @@ export class FlightController {
 
     const speedScale = clamp(distanceToAdjustedTarget / this.slowRadius, 0.12, 1);
     desiredVelocity.multiplyScalar(this.maxSpeed * speedScale);
-    desiredVelocity.add(this.computeSwarmAvoidance(swarm));
+    desiredVelocity.add(this.computePeerAvoidance());
     desiredVelocity.add(this.computeWindInfluence(worldMap));
     desiredVelocity.add(this.windVelocity);
     return desiredVelocity;
@@ -142,19 +145,14 @@ export class FlightController {
     return fieldWind.multiplyScalar(clamp(pushOrDrag, 0.24, 0.82));
   }
 
-  computeSwarmAvoidance(swarm) {
+  computePeerAvoidance() {
     const avoidance = new THREE.Vector3();
-
-    if (!swarm) {
-      return avoidance;
-    }
-
     const ownGps = enuVector(this.drone.gps.read());
     const ownAcceleration = enuVector(this.drone.imu.read().accelerometer);
 
-    swarm.getNeighborSensorReadings(this.drone).forEach(({ gps, imu }) => {
-      const neighborPosition = enuVector(gps);
-      const neighborAcceleration = enuVector(imu.accelerometer);
+    this.drone.radio.getPeerMessages().forEach((message) => {
+      const neighborPosition = enuVector(message.position);
+      const neighborAcceleration = enuVector(message.acceleration);
       const awayFromNeighbor = ownGps.clone().sub(neighborPosition);
       const distance = awayFromNeighbor.length();
 
@@ -163,7 +161,7 @@ export class FlightController {
       }
 
       if (distance < 0.001) {
-        const indexAngle = (this.drone.swarmIndex ?? 0) * 2.399963;
+        const indexAngle = this.getDeterministicPeerAngle();
         awayFromNeighbor.set(Math.cos(indexAngle), Math.sin(indexAngle), 0.25);
       } else {
         awayFromNeighbor.divideScalar(distance);
@@ -183,6 +181,16 @@ export class FlightController {
     });
 
     return avoidance;
+  }
+
+  getDeterministicPeerAngle() {
+    let hash = 0;
+
+    for (let index = 0; index < this.drone.droneId.length; index += 1) {
+      hash = (hash * 31 + this.drone.droneId.charCodeAt(index)) % 9973;
+    }
+
+    return (hash / 9973) * Math.PI * 2;
   }
 
   getSafeFinalTarget(worldMap) {
@@ -285,13 +293,16 @@ export class FlightController {
     this.trackDistance(previousPosition);
   }
 
-  releaseHoldIfDisplaced(swarm = null, worldMap = null) {
-    if (!this.reachedTarget || !this.target || !swarm || !worldMap) {
+  releaseHoldIfDisplaced(worldMap = null) {
+    if (!this.reachedTarget || !this.target || !worldMap) {
       return;
     }
 
     const finalTarget = this.getSafeFinalTarget(worldMap);
-    const arrivalTarget = swarm.getArrivalPositionForDrone(this.drone, finalTarget);
+    const arrivalTarget = this.drone.radio.getLocalArrivalSlot(finalTarget, {
+      formationRadius: this.arrivalFormationRadius,
+      engageRadius: this.arrivalFormationEngageRadius,
+    });
     arrivalTarget.z = Math.max(
       arrivalTarget.z,
       worldMap.getHeightAt(arrivalTarget.x, arrivalTarget.y) +

@@ -57,13 +57,11 @@ const flightParameters = {
   avoidanceStrength: 38,
   emergencyAvoidanceStrength: 92,
   holdPositionThreshold: 7,
-};
-
-const swarm = new DroneSwarm({
-  collisionPadding: 4.5,
   arrivalFormationRadius: 20,
   arrivalFormationEngageRadius: 115,
-});
+};
+
+const swarm = new DroneSwarm({ name: "Decentralized Drone Fleet" });
 simulation.setDroneSwarm(swarm);
 
 let drones = [];
@@ -218,8 +216,11 @@ function randomizeHeatEntities(map) {
 }
 
 function createRandomDrones(map, endpoint) {
+  const launchPoints = [];
+
   return DRONE_CONFIGS.map((config, index) => {
-    const launchPoint = createRandomDroneStart(map, endpoint);
+    const launchPoint = createRandomDroneStart(map, endpoint, launchPoints);
+    launchPoints.push(launchPoint);
     const drone = new Drone({
       id: `Drone-${String(index + 1).padStart(2, "0")}`,
       name: config.name,
@@ -227,6 +228,7 @@ function createRandomDrones(map, endpoint) {
       radius: 4.8,
       color: config.color,
       flightControllerOptions: flightParameters,
+      radioOptions: { range: Math.hypot(map.width, map.depth) * 1.15, messageTtl: 3 },
       thermalSensorOptions: { range: Math.hypot(map.width, map.depth) * 1.25 },
     });
 
@@ -237,11 +239,15 @@ function createRandomDrones(map, endpoint) {
   });
 }
 
-function createRandomDroneStart(map, endpoint) {
+function createRandomDroneStart(map, endpoint, existingLaunchPoints = []) {
   let point = randomMapPosition(map, 70);
   let attempts = 0;
 
-  while (distance2D(point, endpoint) < 180 && attempts < 30) {
+  while (
+    (distance2D(point, endpoint) < 180 ||
+      existingLaunchPoints.some((launchPoint) => distance2D(point, launchPoint) < 70)) &&
+    attempts < 60
+  ) {
     point = randomMapPosition(map, 70);
     attempts += 1;
   }

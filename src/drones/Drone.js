@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { DroneRadio } from "../comms/DroneRadio.js";
 import { FlightController } from "./FlightController.js";
 import { GPS } from "../sensors/GPS.js";
 import { IMU } from "../sensors/IMU.js";
@@ -13,6 +14,7 @@ export class Drone extends THREE.Group {
     radius = 5,
     color = 0x58d7ff,
     flightControllerOptions = {},
+    radioOptions = {},
     thermalSensorOptions = {},
   } = {}) {
     super();
@@ -34,6 +36,7 @@ export class Drone extends THREE.Group {
 
     this.gps = new GPS(this);
     this.imu = new IMU(this);
+    this.radio = new DroneRadio(this, radioOptions);
     this.thermalSensor = new ThermalSensor(this, thermalSensorOptions);
     this.thermalReading = this.thermalSensor.read();
     this.flightController = new FlightController(this, flightControllerOptions);
@@ -164,8 +167,9 @@ export class Drone extends THREE.Group {
     this.flightController.setTarget(target);
   }
 
-  update(dt, worldMap, swarm = null) {
-    this.flightController.update(dt, worldMap, swarm);
+  update(dt, worldMap, peers = []) {
+    this.radio.update(dt, peers);
+    this.flightController.update(dt, worldMap);
     this.thermalReading = this.thermalSensor.read(worldMap);
 
     if (this.sensorHalo) {
